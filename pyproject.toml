@@ -1,10 +1,16 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=77", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "emusen-lunapy"
-version = "0.4.0"
+# THE VERSION COMES FROM THE GIT TAG, not from this file. A version written in
+# two places is a version that will eventually disagree with itself, and PyPI is
+# less forgiving of that than NuGet: a version cannot be re-uploaded AT ALL, so
+# publishing under the wrong number burns it permanently. setuptools_scm reads
+# the tag at build time; a build from an untagged tree gets a .dev version,
+# which is a local build saying so rather than pretending to be a release.
+dynamic = ["version"]
 description = "A small Qt toolkit: a theme, a fluent layout surface, and a harness that can tell whether a window actually rendered."
 readme = "README.md"
 license = "MIT"
@@ -39,6 +45,10 @@ Source = "https://github.com/RedQuE3n/EmuSen.LunaPY"
 # tests/test_layering.py asserts exactly that.
 [tool.setuptools]
 packages = ["lunapy"]
+
+[tool.setuptools_scm]
+# `v0.4.0` -> `0.4.0`. The tag is the whole input.
+tag_regex = "^v(?P<version>[0-9].*)$"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

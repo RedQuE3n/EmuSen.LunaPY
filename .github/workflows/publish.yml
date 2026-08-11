@@ -1,0 +1,90 @@
+# Publish to PyPI when a version tag is pushed.
+#
+#     git tag v0.4.0 && git push origin v0.4.0
+#
+# THERE IS NO API TOKEN, and that is deliberate. This uses PyPI Trusted
+# Publishing: the job asks GitHub for a short-lived OIDC token proving which
+# repository, which workflow file and which environment is running, and PyPI
+# exchanges that for an upload token valid for a few minutes. Nothing
+# long-lived is stored, so there is no secret to leak, rotate, or print in a log.
+#
+# The trust policy lives on pypi.org under the project's Settings -> Publishing,
+# and it names five things that must match this file exactly:
+#
+#     PyPI project name   emusen-lunapy
+#     Owner               RedQuE3n            (the GitHub LOGIN, not a person's name)
+#     Repository          EmuSen.LunaPY
+#     Workflow            publish.yml         (renaming this file breaks publishing)
+#     Environment         pypi                (must match `environment:` below)
+#
+# THE VERSION COMES FROM THE TAG. pyproject.toml declares `dynamic = ["version"]`
+# and setuptools_scm reads the tag at build time, so there is one place a version
+# is spelled. That matters more here than it did for LunaP on NuGet: **PyPI will
+# not accept a version twice, ever** - not with --skip-duplicate, not after a
+# delete. A release published under the wrong number burns that number.
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      # Tested before published. A package that was never run is a package whose
+      # first user is running it for you. No display is needed: lunapy.testing
+      # selects Qt's offscreen platform, which is the same reason BIMA's suite
+      # stopped needing Xvfb.
+      - run: python -m pytest -q
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+
+    # Named so the trust policy can require it. An environment is what lets you
+    # add a manual approval to releases later without touching this file.
+    environment: pypi
+
+    permissions:
+      # The whole mechanism. Without id-token: write the job cannot ask GitHub
+      # for the token PyPI wants to see, and the exchange fails with a 403 that
+      # says nothing useful about why.
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # setuptools_scm derives the version from git history, and the default
+          # shallow clone has no tags in it. Without this the build produces a
+          # 0.1.devN version and publishes THAT, which is a wrong release rather
+          # than a failed one.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install build
+      - run: python -m build
+
+      # Refuse to publish anything that is not exactly the tag. setuptools_scm
+      # appends `.devN` when the tree is dirty or the tag is not on HEAD, and a
+      # dev version uploaded to PyPI is a version number spent for nothing.
+      - name: The artefacts must match the tag
+        run: |
+          EXPECTED="${GITHUB_REF_NAME#v}"
+          BUILT=$(ls dist/*.whl | sed -E 's/.*emusen_lunapy-(.+)-py3-none-any\.whl/\1/')
+          echo "tag $EXPECTED, built $BUILT"
+          test "$EXPECTED" = "$BUILT" || {
+            echo "::error::built $BUILT from tag $EXPECTED - refusing to publish"
+            exit 1
+          }
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -87,4 +87,13 @@ __all__ = [
     "set_diagnostics", "set_store", "store",
 ]
 
-__version__ = "0.4.0"
+# Read from the installed distribution rather than written here, so this is not
+# a second place the version can be spelled -- see pyproject.toml. The fallback
+# is for running straight out of a source tree that was never installed, where
+# there is no distribution to ask and "unknown" is the honest answer.
+try:
+    from importlib.metadata import PackageNotFoundError, version as _distribution_version
+
+    __version__ = _distribution_version("emusen-lunapy")
+except PackageNotFoundError:  # pragma: no cover - a source tree, not an install
+    __version__ = "0.0.0+unknown"
