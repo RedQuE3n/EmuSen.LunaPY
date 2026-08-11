@@ -19,11 +19,22 @@ requires-python = ">=3.10"
 authors = [{ name = "Tristan Pelland" }]
 keywords = ["qt", "pyside6", "gui", "toolkit", "theme"]
 
-# PySide6 is the one dependency, and it is LGPL-3.0. That is a decision with a
-# reason and a consequence, both recorded in docs/LunaPY.md §1.2 — a consumer of
-# this MIT package inherits Qt's terms, and the place to find that out is the
-# design record rather than a licence audit six months later.
-dependencies = ["PySide6>=6.5"]
+# Qt is the one dependency, and it is LGPL-3.0. That is a decision with a reason
+# and a consequence, both recorded in docs/LunaPY.md §1.2 — a consumer of this
+# MIT package inherits Qt's terms, and the place to find that out is the design
+# record rather than a licence audit six months later.
+#
+# `PySide6-Essentials`, NOT the `PySide6` metapackage. The metapackage is
+# Essentials plus Addons, and Addons is Qt3D, Charts, Multimedia, WebEngine and
+# 32 other modules weighing 416MB that nothing here imports — measured at
+# 6.11.1, a venv holding this package went from 721MB to 305MB by naming
+# Essentials. This does not restrict the consumer: `PySide6` itself depends on
+# `PySide6-Essentials`, so an application that wants QtCharts installs the
+# metapackage and both constraints are satisfied. What it stops is a consumer
+# who wants none of it paying for all of it. `tests/test_layering.py` keeps the
+# import surface inside Essentials, because on a developer machine that already
+# has the metapackage the mistake is invisible.
+dependencies = ["PySide6-Essentials>=6.5"]
 
 classifiers = [
   "Development Status :: 3 - Alpha",

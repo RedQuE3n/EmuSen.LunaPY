@@ -79,10 +79,47 @@ ship rather than after. This is the same reasoning that keeps AGPL packages out
 of BIMA, applied honestly to a weaker copyleft rather than used to wave it
 through — LGPL is a real term, just a survivable one.
 
-It is also worth recording what this **costs**: PySide6 is roughly 100MB
-installed, against Tkinter's zero. For a tool distributed to office machines
-that is a real number, and it is the price of the theme and accessibility
-tracks.
+It is also worth recording what this **costs**.
+
+**Correction.** This section said "PySide6 is roughly 100MB installed". That was
+an estimate presented as a measurement, and it was wrong by a factor of six.
+Measured at PySide6 6.11.1 on Python 3.14, in a venv also holding LunaPY,
+pikepdf, pypdf, pillow, lxml and pytest:
+
+| Installed | `site-packages/PySide6` | whole venv |
+|---|---|---|
+| `PySide6` (metapackage) | 648MB | 721MB |
+| `PySide6-Essentials` | 232MB | 305MB |
+
+Neither number is 100MB, and the gap between the two rows is the finding. The
+`PySide6` metapackage is `PySide6-Essentials` plus `PySide6-Addons`, and Addons
+is 36 modules — Qt3D, QtCharts, QtDataVisualization, QtMultimedia, QtWebEngine,
+QtPdf and the rest — of which LunaPY imports **none**. It names three Qt modules
+in total: `QtCore`, `QtGui`, `QtWidgets`. So 416MB of that install was Qt
+nothing here could reach.
+
+The dependency is `PySide6-Essentials>=6.5` as a result. This constrains nobody:
+`PySide6` itself depends on `PySide6-Essentials`, so an application that wants
+QtCharts installs the metapackage and both requirements resolve. What it stops
+is a consumer who wants none of Addons paying for all of it. Both suites were
+run against an Essentials-only venv before the change was made — LunaPY's 345
+and BIMA's 194, all passing.
+
+**Why this needed a test rather than care.** The saving is invisible on a
+developer machine that already has the metapackage. `from PySide6.QtCharts
+import QChart` would import cleanly, the suite would stay green, the wheel would
+build, and the next person to `pip install emusen-lunapy` into a clean
+environment would get a quarter-gigabyte of Qt3D with no diagnostic anywhere.
+Nothing at runtime can notice a dependency that is satisfied. So
+`tests/test_layering.py::test_no_module_reaches_outside_pyside6_essentials`
+pins the import surface to those three modules, and adding a fourth is a
+decision that has to come back to this section. It was sabotaged with a
+`QtCharts` import in `fluent.py` and failed naming the module (§8).
+
+What remains true is the shape of the original point: 305MB against Tkinter's
+zero is still a real number for a tool distributed to office machines, and it is
+still the price of the theme and accessibility tracks. It is now a measured
+price rather than a guessed one.
 
 ### 1.3 The name
 
@@ -615,6 +652,7 @@ that cannot fail is not a test. What each sabotage turned red:
 |---|---|
 | Remove the repolish from `set_style_key` | `test_a_style_key_set_after_showing_needs_the_repolish` |
 | Import an installed but forbidden module | `test_imports_only_qt_and_the_standard_library[fluent.py]` |
+| `from PySide6.QtCharts import QChart` in `fluent.py` | `test_no_module_reaches_outside_pyside6_essentials` (see §1.2) |
 | Remove `image.fill(0)` from `capture` | `test_the_flat_guard_catches_a_widget_that_paints_nothing` |
 | Restore placement on every show | `test_placement_is_restored_once_not_on_every_show` |
 | Save live `geometry()` when maximised | `test_a_maximized_window_remembers_the_size_to_restore_to` |

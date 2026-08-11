@@ -75,6 +75,52 @@ def test_the_harness_takes_no_test_framework():
     )
 
 
+def qt_submodules():
+    """Every `PySide6.X` named anywhere in the package."""
+    found = set()
+    for path in modules():
+        tree = ast.parse(path.read_text(), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                if node.module.startswith("PySide6."):
+                    found.add(node.module.split(".")[1])
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith("PySide6."):
+                        found.add(alias.name.split(".")[1])
+    return found
+
+
+def test_no_module_reaches_outside_pyside6_essentials():
+    """The dependency is `PySide6-Essentials`, and this is what keeps it honest.
+
+    PySide6 ships as three distributions: `shiboken6`, `PySide6-Essentials`
+    (QtCore/QtGui/QtWidgets and 19 others), and `PySide6-Addons` (Qt3D, Charts,
+    Multimedia, WebEngine, QtPdf — 36 modules). The `PySide6` metapackage is
+    both. Depending on the metapackage cost 416MB on disk for modules nothing
+    here imports: measured at 6.11.1, a venv went from 721MB to 305MB by asking
+    for Essentials instead, with all 345 tests still passing.
+
+    The trap is that the saving is invisible to anyone developing against a
+    machine that already has the metapackage installed — `from PySide6.QtCharts
+    import QChart` will simply work, the suite will stay green, and the next
+    consumer to install LunaPY quietly gets a quarter-gigabyte of Qt3D. Nothing
+    at runtime notices; only this does.
+
+    Adding a name here is therefore a real decision, not a one-line edit: if it
+    is an Essentials module, add it and say why in docs/LunaPY.md §1. If it is
+    an Addons module, the dependency in `pyproject.toml` has to change with it
+    and the size goes in the record. See §1.2.
+    """
+    permitted = {"QtCore", "QtGui", "QtWidgets"}
+    outside = qt_submodules() - permitted
+    assert not outside, (
+        f"lunapy imports {sorted(outside)} from PySide6. Only {sorted(permitted)} are "
+        "permitted — anything else risks pulling PySide6-Addons, which is 416MB of "
+        "Qt nothing here uses. See docs/LunaPY.md §1.2."
+    )
+
+
 def test_the_guard_can_fail():
     """The sabotage. A rule nobody has seen go red is a rule nobody has tested.
 
