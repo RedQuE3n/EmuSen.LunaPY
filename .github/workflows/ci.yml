@@ -11,6 +11,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Callable, so publish.yml runs THIS suite rather than its own copy of it.
+  # It had a copy for about an hour and the copy was already wrong: it omitted
+  # the Qt libraries below, so the first tagged build failed at import with
+  # "libEGL.so.1: cannot open shared object file". Two places to describe how
+  # to run the tests is one place too many.
+  workflow_call:
 
 jobs:
   test:

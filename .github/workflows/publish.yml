@@ -29,19 +29,17 @@ on:
     tags: ['v*']
 
 jobs:
+  # Tested before published. A package that was never run is a package whose
+  # first user is running it for you.
+  #
+  # ci.yml is CALLED rather than copied, and that is not tidiness. This job was
+  # a copy of ci.yml's steps for about an hour, and the copy was already wrong:
+  # it left out the Qt shared libraries, so the first tagged build failed at
+  # import with "libEGL.so.1: cannot open shared object file". The gate held --
+  # `needs: test` meant nothing was uploaded and the version was not spent --
+  # but the whole failure existed because the same setup was described twice.
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install -r requirements.txt
-      # Tested before published. A package that was never run is a package whose
-      # first user is running it for you. No display is needed: lunapy.testing
-      # selects Qt's offscreen platform, which is the same reason BIMA's suite
-      # stopped needing Xvfb.
-      - run: python -m pytest -q
+    uses: ./.github/workflows/ci.yml
 
   publish:
     needs: test
