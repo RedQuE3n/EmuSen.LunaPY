@@ -57,7 +57,8 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      # Current node24 majors, matching ci.yml — the reasoning is there.
+      - uses: actions/checkout@v7
         with:
           # setuptools_scm derives the version from git history, and the default
           # shallow clone has no tags in it. Without this the build produces a
@@ -65,7 +66,7 @@ jobs:
           # than a failed one.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 

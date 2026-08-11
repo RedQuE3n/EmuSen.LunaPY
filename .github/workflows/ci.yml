@@ -29,8 +29,21 @@ jobs:
         python-version: ['3.10', '3.12', '3.14']
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Current majors, both node24. These were @v4 and @v5, which GitHub was
+      # already force-running on Node 24 while printing a deprecation warning on
+      # every job — so the pins described a runtime that had stopped being used.
+      # A warning nobody can act on is a warning people learn to scroll past,
+      # and the next real one scrolls past with it.
+      #
+      # Majors, not SHAs. Pinning a SHA is the supply-chain-hardened choice and
+      # is the right call for a workflow with secrets in reach; this one has
+      # none, and publish.yml has no stored token either (it exchanges an OIDC
+      # token that GitHub scopes to this repo and workflow). The cost of SHAs is
+      # that security patches arrive only when somebody bumps them by hand, and
+      # an unattended repo does not get bumped. Revisit if a secret ever lands
+      # in either file.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
