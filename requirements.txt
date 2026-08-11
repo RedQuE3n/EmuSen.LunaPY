@@ -1,0 +1,8 @@
+# Pinned, because a toolkit that renders differently on two machines is a
+# toolkit whose baseline tests cannot mean anything. PySide6 ships cp310-abi3
+# wheels, so one wheel serves every Python from 3.10 up and there is no
+# per-interpreter lag to work around.
+PySide6==6.11.1
+
+# Test only.
+pytest==9.1.1

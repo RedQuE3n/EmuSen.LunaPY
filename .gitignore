@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Render dumps and baselines. A baseline is an artefact of one machine's font
+# rendering and one Qt build; committing one makes every other machine's suite
+# red for a reason unrelated to the change in front of it. See docs/LunaPY.md §4.2.
+work/
+baselines/

@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emusen-lunapy"
+version = "0.4.0"
+description = "A small Qt toolkit: a theme, a fluent layout surface, and a harness that can tell whether a window actually rendered."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Tristan Pelland" }]
+keywords = ["qt", "pyside6", "gui", "toolkit", "theme"]
+
+# PySide6 is the one dependency, and it is LGPL-3.0. That is a decision with a
+# reason and a consequence, both recorded in docs/LunaPY.md §1.2 — a consumer of
+# this MIT package inherits Qt's terms, and the place to find that out is the
+# design record rather than a licence audit six months later.
+dependencies = ["PySide6>=6.5"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: X11 Applications :: Qt",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: User Interfaces",
+]
+
+[project.urls]
+Homepage = "https://github.com/RedQuE3n/EmuSen.LunaPY"
+Source = "https://github.com/RedQuE3n/EmuSen.LunaPY"
+
+# `emusen-lunapy` on PyPI, `lunapy` in an import statement. The prefix is the
+# one LunaP's NuGet id already carries, from where both were written; `lunapy`
+# alone was taken on PyPI, and the prefix resolves that without inventing a
+# third name for the same thing. Nothing here depends on anything of EmuSen's —
+# tests/test_layering.py asserts exactly that.
+[tool.setuptools]
+packages = ["lunapy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Qt writes a line of platform noise to stderr under the offscreen plugin that
+# has nothing to say about the test that produced it.
+filterwarnings = ["error::DeprecationWarning"]
